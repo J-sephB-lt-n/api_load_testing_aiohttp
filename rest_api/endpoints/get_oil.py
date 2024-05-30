@@ -8,14 +8,14 @@ import time
 
 import flask
 
-import loadtest_config
+import config
 
 bp = flask.Blueprint("get_oil", __name__)
 
 
 @bp.route("/get_oil", methods=["GET"])
 def get_oil():
-    time.sleep(loadtest_config.ENDPOINT_PROCESS_TIME_NSECS["/get_task"])
+    time.sleep(config.ENDPOINT_PROCESS_TIME_NSECS["/get_task"])
     return flask.Response(
         json.dumps(
             {
