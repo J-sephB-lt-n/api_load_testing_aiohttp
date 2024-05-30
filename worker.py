@@ -1,5 +1,5 @@
 """
-TODO
+The Worker() class
 """
 
 import logging
@@ -12,7 +12,9 @@ logger = logging.getLogger(__name__)
 class Worker:
     """A single automated endpoint user (for load-testing)"""
 
-    def __init__(self, id: str, lifetime: int, session: aiohttp.ClientSession) -> None:
+    def __init__(
+        self, id: str, lifetime: int, session: aiohttp.ClientSession, service_url: str
+    ) -> None:
         """Define attributes at instantiation"""
         self.id = id
         self.session = session
@@ -20,6 +22,7 @@ class Worker:
         self.success_task_count = 0
         self.failed_task_count = 0
         self.lifetime = lifetime
+        self.service_url = service_url
 
     async def work(self):
         """
@@ -35,13 +38,14 @@ class Worker:
                 otherwise repeat from step (1)
         """
         while (self.success_task_count + self.failed_task_count) < self.lifetime:
-            async with self.session.get("http://localhost:5000/get_task") as resp:
+            async with self.session.get(f"{self.service_url}/get_task") as resp:
                 self.request_count += 1
                 logger.info(
-                    "worker [%s] request [%s] to /get_task", self.id, self.request_count
+                    "worker |%s| request [%s] to /get_task", self.id, self.request_count
                 )
+                task = await resp.text()
                 logger.info(
-                    "worker [%s] request [%s] had status [%s]",
+                    "worker |%s| request [%s] had status {%s}",
                     self.id,
                     self.request_count,
                     resp.status,
@@ -49,20 +53,20 @@ class Worker:
                 if resp.status != 200:
                     self.failed_task_count += 1
                     continue
-                task = await resp.text()
                 logger.info(
-                    "worker [%s] request [%s] received task [%s]",
+                    "worker |%s| request [%s] received task [%s]",
                     self.id,
                     self.request_count,
                     task,
                 )
-            async with self.session.get(f"http://localhost:5000/{task}") as resp:
+            async with self.session.get(f"{self.service_url}/{task}") as resp:
                 self.request_count += 1
                 logger.info(
-                    "worker [%s] request [%s] to /%s", self.id, self.request_count, task
+                    "worker |%s| request [%s] to /%s", self.id, self.request_count, task
                 )
+                resource_received = await resp.json()
                 logger.info(
-                    "worker [%s] request [%s] had status [%s]",
+                    "worker |%s| request [%s] had status {%s}",
                     self.id,
                     self.request_count,
                     resp.status,
@@ -70,5 +74,42 @@ class Worker:
                 if resp.status != 200:
                     self.failed_task_count += 1
                     continue
-                task = await resp.text()
+                logger.info(
+                    "worker |%s| request [%s] received %s units of %s",
+                    self.id,
+                    self.request_count,
+                    resource_received["amount"],
+                    resource_received["resource"],
+                )
+            if resource_received["amount"] > 0:
+                async with self.session.post(
+                    f"{self.service_url}/deposit_resource",
+                    json={
+                        "resource": resource_received["resource"],
+                        "amount": int(resource_received["amount"]),
+                    },
+                ) as resp:
+                    self.request_count += 1
+                    logger.info(
+                        "worker |%s| request [%s] to /deposit_resource",
+                        self.id,
+                        self.request_count,
+                    )
+                    deposit_status = await resp.json()
+                    logger.info(
+                        "worker |%s| request [%s] had status {%s}",
+                        self.id,
+                        self.request_count,
+                        resp.status,
+                    )
+                    if resp.status != 200:
+                        self.failed_task_count += 1
+                        continue
+                    logger.info(
+                        "worker |%s| request [%s] received deposit status %s",
+                        self.id,
+                        self.request_count,
+                        deposit_status,
+                    )
             self.success_task_count += 1
+            logging.info("worker |%s| has successfully completed %s tasks", self.id, self.success_task_count)

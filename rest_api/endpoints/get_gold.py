@@ -8,7 +8,7 @@ import time
 
 import flask
 
-import config 
+import config
 
 bp = flask.Blueprint("get_gold", __name__)
 
@@ -16,12 +16,9 @@ bp = flask.Blueprint("get_gold", __name__)
 @bp.route("/get_gold", methods=["GET"])
 def get_gold():
     time.sleep(config.ENDPOINT_PROCESS_TIME_NSECS["/get_task"])
-    return flask.Response(
-        json.dumps(
-            {
-                "resource": "gold",
-                "amount": random.randint(0, 1),
-            }
-        ),
-        status=200,
+    return flask.jsonify(
+        {
+            "resource": "gold",
+            "amount": random.randint(0, 1),
+        }
     )
