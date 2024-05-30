@@ -13,12 +13,12 @@ import endpoints.get_oil
 import endpoints.get_water
 import endpoints.deposit_resource
 
-if os.path.exists("logs/endpoints.log"):
-    os.remove("logs/endpoints.log")
+if os.path.exists("endpoints.log"):
+    os.remove("endpoints.log")
 logging.basicConfig(
     level=logging.INFO,
     format="%(name)s %(message)s",
-    handlers=[logging.FileHandler("logs/endpoints.log"), logging.StreamHandler()],
+    handlers=[logging.FileHandler("endpoints.log"), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
