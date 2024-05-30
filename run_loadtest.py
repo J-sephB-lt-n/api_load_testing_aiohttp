@@ -39,20 +39,20 @@ logger = logging.getLogger(__name__)
 
 
 async def main():
-    async with aiohttp.ClientSession(
-        connector=aiohttp.TCPConnector(limit=1000)
-    ) as session:
-        workers: list[Worker] = [
-            Worker(
-                id=idx,
-                lifetime=loadtest_config.N_TASKS_PER_WORKER,
-                session=session,
-                service_url=args.service_url,
-            )
-            for idx in range(loadtest_config.N_WORKERS)
-        ]
-        tasks = [worker.work() for worker in workers]
-        await asyncio.gather(*tasks)
+    # async with aiohttp.ClientSession(
+    #    connector=aiohttp.TCPConnector(limit=1000)
+    # ) as session:
+    workers: list[Worker] = [
+        Worker(
+            id=idx,
+            lifetime=loadtest_config.N_TASKS_PER_WORKER,
+            # session=session,
+            service_url=args.service_url,
+        )
+        for idx in range(loadtest_config.N_WORKERS)
+    ]
+    tasks = [worker.work() for worker in workers]
+    await asyncio.gather(*tasks)
 
 
 if __name__ == "__main__":
